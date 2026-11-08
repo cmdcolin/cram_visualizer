@@ -111,13 +111,16 @@ export default function SliceReads({
   const bpPerPx = (domain.end - domain.start) / Math.max(width, 1)
 
   const blockFor = useMemo(() => {
-    const map = new Map<string, SliceInspection['blocks'][number]>()
-    for (const b of inspection.blocks) {
-      for (const name of b.label.split(', ')) {
-        map.set(name, b)
-      }
-    }
-    return map
+    const { blocks, description } = inspection
+    const core = blocks.find(b => b.contentType === 'CORE_DATA')
+    return new Map(
+      (description?.series ?? []).map(series => [
+        series.name,
+        series.contentIds.length === 0
+          ? core
+          : blocks.find(b => series.contentIds.includes(b.contentId)),
+      ]),
+    )
   }, [inspection])
 
   useEffect(() => {
@@ -285,9 +288,11 @@ export default function SliceReads({
                         <td className="muted">{name}</td>
                         <td className="record-value">{value}</td>
                         <td className="muted">
-                          {block
-                            ? `block ${block.contentId}, ${block.compressionMethod}, ${fmtBytes(block.size)} for all ${fmtInt(total)} records`
-                            : 'core block (bit-packed)'}
+                          {block === undefined
+                            ? 'not stored in this slice'
+                            : block.contentType === 'CORE_DATA'
+                              ? `core block, bit-packed with the other core series, ${fmtBytes(block.size)} in all`
+                              : `block ${block.contentId}, ${block.compressionMethod}, ${fmtBytes(block.size)} for all ${fmtInt(total)} records`}
                         </td>
                       </tr>
                     )

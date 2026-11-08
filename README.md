@@ -18,6 +18,22 @@ query actually reads, and where the bytes inside a slice go.
 - **Byte breakdown**: the same per-series totals summed over up to 24 slices in
   view
 
+## Screenshots
+
+A 600 kbp query on a 30x Illumina genome: the `.crai` density and slices, where
+the reads land in the file, and the request waterfall.
+
+![Index density, file layout and request waterfall](img/overview.png)
+
+A PacBio slice: the container zoomed into its blocks, and its reads overlapping
+the neighbouring slices.
+
+![Slice byte map and read pileup](img/slice.png)
+
+One Illumina read, traced back to the blocks its fields are decoded from.
+
+![A record rebuilt from its columns](img/record.png)
+
 ## Develop
 
     pnpm install
