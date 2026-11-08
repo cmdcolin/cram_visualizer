@@ -1,0 +1,39 @@
+{
+  "name": "cram_visualizer",
+  "type": "module",
+  "license": "MIT",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite",
+    "lint": "eslint --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "predep": "npm run build",
+    "dep": "gh-pages -d dist",
+    "postdep": "git push"
+  },
+  "dependencies": {
+    "@gmod/cram": "^14.3.2",
+    "generic-filehandle2": "^2.5.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "eslint": "^10.4.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "eslint-plugin-unicorn": "^64.0.0",
+    "gh-pages": "^6.3.0",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.0",
+    "vite": "^8.0.14"
+  }
+}
