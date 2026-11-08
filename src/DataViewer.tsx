@@ -1,4 +1,10 @@
-import { useCallback, useMemo, useState, useSyncExternalStore } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 
 import FileLayout from './FileLayout.tsx'
 import GenomeView from './GenomeView.tsx'
@@ -17,19 +23,55 @@ import {
 } from './util.ts'
 
 import type { CramData, Slice, SliceInspection } from './cram.ts'
+import type { ReferenceInfo } from '@gmod/cram'
 
-export default function DataViewer({ data }: { data: CramData }) {
+function resolveLoc(str: string, refs: ReferenceInfo[]) {
+  const loc = parseLoc(str)
+  const candidates = loc
+    ? [loc.refName, loc.refName.replace(/^chr/i, ''), `chr${loc.refName}`]
+    : []
+  const seqId = candidates
+    .map(c => refs.findIndex(r => r.name === c))
+    .find(id => id >= 0)
+  const length = seqId === undefined ? undefined : refs[seqId]?.length
+  return loc && seqId !== undefined && length !== undefined
+    ? {
+        seqId,
+        view: clampView(
+          {
+            start: Math.max((loc.start ?? 1) - 1, 0),
+            end:
+              loc.end ?? (loc.start === undefined ? length : loc.start + 1000),
+          },
+          length,
+        ),
+      }
+    : undefined
+}
+
+export default function DataViewer({
+  data,
+  initialLoc,
+}: {
+  data: CramData
+  initialLoc: string | null
+}) {
   const { refs, index, definition } = data
   const summary = useMemo(() => fileSummary(index), [index])
   const placedSeqIds = summary.refExtents
     .map(e => e.seqId)
     .filter(id => id >= 0)
     .toSorted((a, b) => a - b)
-  const [seqId, setSeqId] = useState(placedSeqIds[0] ?? 0)
+  const [initial] = useState(() =>
+    initialLoc ? resolveLoc(initialLoc, refs) : undefined,
+  )
+  const [seqId, setSeqId] = useState(initial?.seqId ?? placedSeqIds[0] ?? 0)
   const entries = useMemo(() => index[seqId] ?? [], [index, seqId])
   const refLength =
     refs[seqId]?.length ?? Math.max(...entries.map(e => e.start + e.span), 1)
-  const [view, setView] = useState<View>({ start: 0, end: refLength })
+  const [view, setView] = useState<View>(
+    initial?.view ?? { start: 0, end: refLength },
+  )
   const [locInput, setLocInput] = useState('')
   const [locError, setLocError] = useState<string>()
   const [inspection, setInspection] = useState<SliceInspection>()
@@ -80,27 +122,29 @@ export default function DataViewer({ data }: { data: CramData }) {
     )
   }
 
-  function findRef(name: string) {
-    const candidates = [name, name.replace(/^chr/i, ''), `chr${name}`]
-    return candidates
-      .map(c => refs.findIndex(r => r.name === c))
-      .find(id => id >= 0)
-  }
-
   function goTo(str: string) {
-    const loc = parseLoc(str)
-    const id = loc ? findRef(loc.refName) : undefined
-    if (loc && id !== undefined) {
-      const length = refs[id]!.length
+    const resolved = resolveLoc(str, refs)
+    if (resolved) {
       setLocError(undefined)
-      selectRef(id, {
-        start: Math.max((loc.start ?? 1) - 1, 0),
-        end: loc.end ?? (loc.start === undefined ? length : loc.start + 1000),
-      })
+      selectRef(resolved.seqId, resolved.view)
     } else {
       setLocError(`Could not find ${str}`)
     }
   }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const url = new URL(globalThis.location.href)
+      url.searchParams.set(
+        'loc',
+        fmtLoc(refName(seqId), view.start, view.end).replaceAll(',', ''),
+      )
+      globalThis.history.replaceState(null, '', url)
+    }, 300)
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [seqId, view, refName])
 
   const unmapped = index['-1']
 

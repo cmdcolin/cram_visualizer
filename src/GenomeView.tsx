@@ -18,6 +18,7 @@ const RULER_H = 22
 const DENSITY_H = 90
 const ROW_H = 12
 const MAX_ROWS = 8
+const SHARED_ROW_OVERLAP = 0.05
 const MAX_DRAWN_SLICES = 4000
 
 interface PlacedSlice {
@@ -32,7 +33,8 @@ function layoutSlices(
 ) {
   const rowEnds: number[] = []
   return visible.map(slice => {
-    const free = rowEnds.findIndex(end => end <= slice.start)
+    const tolerance = slice.span * SHARED_ROW_OVERLAP
+    const free = rowEnds.findIndex(end => end - tolerance <= slice.start)
     const row = free === -1 ? Math.min(rowEnds.length, MAX_ROWS - 1) : free
     rowEnds[row] = Math.max(rowEnds[row] ?? 0, slice.start + slice.span)
     const placed: PlacedSlice = {
@@ -264,7 +266,7 @@ export default function GenomeView({
     const bp = view.start + (event.clientX - rect.left) * bpPerPx
     const row = Math.floor((event.clientY - rect.top - 2) / ROW_H)
     const slop = 2 * bpPerPx
-    return placed.find(
+    return placed.findLast(
       p =>
         p.row === row &&
         bp >= p.slice.start - slop &&

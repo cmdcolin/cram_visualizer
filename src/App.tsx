@@ -129,8 +129,15 @@ function HelpDialog({
 }
 
 export default function App() {
-  const [cramUrl, setCramUrl] = useState(exampleFiles[0]!.url)
-  const [craiUrl, setCraiUrl] = useState(`${exampleFiles[0]!.url}.crai`)
+  const [params] = useState(
+    () => new URLSearchParams(globalThis.location.search),
+  )
+  const [cramUrl, setCramUrl] = useState(
+    params.get('cram') ?? exampleFiles[0]!.url,
+  )
+  const [craiUrl, setCraiUrl] = useState(
+    params.get('crai') ?? `${params.get('cram') ?? exampleFiles[0]!.url}.crai`,
+  )
   const [useLocal, setUseLocal] = useState(false)
   const [localCram, setLocalCram] = useState<File>()
   const [localCrai, setLocalCrai] = useState<File>()
@@ -152,6 +159,20 @@ export default function App() {
     progress?: string
   }>()
   const current = status?.handles === handles ? status : undefined
+
+  useEffect(() => {
+    const url = new URL(globalThis.location.href)
+    if (useLocal) {
+      url.searchParams.delete('cram')
+      url.searchParams.delete('crai')
+    } else {
+      url.searchParams.set('cram', cramUrl)
+      url.searchParams.set('crai', craiUrl)
+    }
+    if (url.href !== globalThis.location.href) {
+      globalThis.history.replaceState(null, '', url)
+    }
+  }, [useLocal, cramUrl, craiUrl])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -286,7 +307,14 @@ export default function App() {
       {current?.error ? (
         <div className="error">{`${current.error}`}</div>
       ) : current?.data ? (
-        <DataViewer data={current.data} />
+        <DataViewer
+          data={current.data}
+          initialLoc={
+            !useLocal && cramUrl === params.get('cram')
+              ? params.get('loc')
+              : null
+          }
+        />
       ) : (
         <div>
           {handles
