@@ -18,6 +18,10 @@ query actually reads, and where the bytes inside a slice go.
 - **Byte breakdown**: the same per-series totals summed over up to 24 slices in
   view
 
+## Demo
+
+https://cmdcolin.github.io/cram_visualizer
+
 ## Screenshots
 
 A 600 kbp query on a 30x Illumina genome: the `.crai` density and slices, where
